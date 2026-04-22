@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login · Greenfield Arena</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+</head><body>
+<div id="navbar"></div>
+<main class="auth-wrap">
+  <div class="card auth-card">
+    <h2 id="title">Welcome back</h2>
+    <p style="text-align:center" id="sub">Login to book your turf</p>
+    <div id="signup-name" style="display:none"><label>Name</label><input id="f-name" placeholder="Your name"></div>
+    <div style="margin-top:.75rem"><label>Email</label><input id="f-email" type="email" placeholder="you@example.com"></div>
+    <div style="margin-top:.75rem"><label>Password</label><input id="f-pass" type="password" placeholder="••••"></div>
+    <button class="btn btn-hero btn-block" id="submit-btn" style="margin-top:1rem">Login</button>
+    <p class="auth-switch">
+      <span id="switch-text">No account?</span>
+      <a href="#" id="switch-link">Sign up</a>
+    </p>
+  </div>
+</main>
+<div id="footer"></div><div id="toast-root"></div>
+<script src="../js/app.js"></script><script src="../js/components.js"></script>
+<script>
+let mode = "login";
+const next = qs("next");
+function applyMode() {
+  document.getElementById("title").textContent = mode === "login" ? "Welcome back" : "Create account";
+  document.getElementById("sub").textContent = mode === "login" ? "Login to book your turf" : "Sign up to start booking";
+  document.getElementById("signup-name").style.display = mode === "login" ? "none" : "block";
+  document.getElementById("submit-btn").textContent = mode === "login" ? "Login" : "Sign up";
+  document.getElementById("switch-text").textContent = mode === "login" ? "No account?" : "Have an account?";
+  document.getElementById("switch-link").textContent = mode === "login" ? "Sign up" : "Login";
+}
+document.getElementById("switch-link").addEventListener("click", e => { e.preventDefault(); mode = mode === "login" ? "signup" : "login"; applyMode(); });
+document.getElementById("submit-btn").addEventListener("click", () => {
+  const email = document.getElementById("f-email").value.trim();
+  const pass = document.getElementById("f-pass").value;
+  const name = document.getElementById("f-name")?.value.trim() || "";
+  const r = mode === "login" ? Store.login(email, pass) : Store.signup(name, email, pass);
+  if (!r.ok) { toast(r.error, "error"); return; }
+  toast("Welcome!", "success");
+  setTimeout(() => {
+    if (next) {
+      location.href = location.pathname.includes("/pages/") ? next + ".html" : "/" + next;
+    } else {
+      location.href = location.pathname.includes("/pages/") ? "../index.html" : "/";
+    }
+  }, 500);
+});
+applyMode();
+</script>
+</body></html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard · Greenfield Arena</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+</head><body>
+<div id="navbar"></div>
+<main class="container" style="padding:2rem 1.25rem">
+  <h1 style="font-size:2rem">Admin Dashboard</h1>
+  <div id="content"></div>
+</main>
+<div id="footer"></div><div id="toast-root"></div>
+<script src="../js/app.js"></script><script src="../js/components.js"></script>
+<script>
+function render() {
+  const s = Store.get();
+  if (!s.isAdmin) { document.getElementById("content").innerHTML = `<div class="card center"><p>Admin access required.</p><a href="admin-login.html" class="btn btn-primary">Admin login</a></div>`; return; }
+  const all = s.bookings;
+  const upcoming = all.filter(b => b.status === "upcoming");
+  const revenue = all.filter(b => b.status !== "cancelled").reduce((sum, b) => sum + b.amount, 0);
+  document.getElementById("content").innerHTML = `
+    <div class="grid grid-4" style="margin-bottom:1.5rem">
+      <div class="card stat"><div class="label">Total bookings</div><div class="value">${all.length}</div></div>
+      <div class="card stat"><div class="label">Upcoming</div><div class="value">${upcoming.length}</div></div>
+      <div class="card stat"><div class="label">Revenue</div><div class="value">₹${revenue}</div></div>
+      <div class="card stat"><div class="label">Avg / booking</div><div class="value">₹${all.length ? Math.round(revenue / Math.max(1, all.length - all.filter(b=>b.status==='cancelled').length)) : 0}</div></div>
+    </div>
+    <div class="card" style="margin-bottom:1rem;display:flex;gap:.75rem;flex-wrap:wrap;align-items:end">
+      <div style="flex:1;min-width:160px"><label>Search</label><input id="q" placeholder="Name or ID"></div>
+      <div style="min-width:160px"><label>Status</label>
+        <select id="fstatus">
+          <option value="">All</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div style="min-width:160px"><label>Date</label><input id="fdate" type="date"></div>
+    </div>
+    <div class="table-wrap"><table id="tbl">
+      <thead><tr><th>ID</th><th>Name</th><th>WhatsApp</th><th>Date</th><th>Slots</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table></div>`;
+  const renderRows = () => {
+    const q = document.getElementById("q").value.toLowerCase();
+    const fs = document.getElementById("fstatus").value;
+    const fd = document.getElementById("fdate").value;
+    const rows = all.filter(b =>
+      (!q || b.name.toLowerCase().includes(q) || b.id.toLowerCase().includes(q)) &&
+      (!fs || b.status === fs) && (!fd || b.date === fd)
+    ).sort((a,b) => b.createdAt.localeCompare(a.createdAt));
+    document.querySelector("#tbl tbody").innerHTML = rows.length ? rows.map(b => `
+      <tr><td><code>${b.id}</code></td><td>${b.name}</td><td>${b.whatsapp}</td>
+      <td>${fmtDate(b.date)}</td><td>${b.slotIds.map(x=>x.split("-")[0]).join(", ")}</td>
+      <td>₹${b.amount}</td><td><span class="status-pill status-${b.status}">${b.status}</span></td>
+      <td>${b.status === "upcoming" ? `<button class="btn btn-danger" data-cancel="${b.id}">Cancel</button>` : ""}</td></tr>`).join("")
+      : `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:2rem">No bookings match your filters.</td></tr>`;
+    document.querySelectorAll("[data-cancel]").forEach(btn => btn.addEventListener("click", () => {
+      Store.cancelBooking(btn.dataset.cancel); toast("Cancelled", "success"); render();
+    }));
+  };
+  ["q","fstatus","fdate"].forEach(id => document.getElementById(id).addEventListener("input", renderRows));
+  renderRows();
+}
+render();
+</script>
+</body></html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Login · Greenfield Arena</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+</head><body>
+<div id="navbar"></div>
+<main class="auth-wrap">
+  <div class="card auth-card">
+    <h2>Admin login</h2>
+    <p style="text-align:center;font-size:.85rem;color:var(--text-muted)">Demo: admin@greenfield.com / admin123</p>
+    <div style="margin-top:.75rem"><label>Email</label><input id="f-email" type="email" value="admin@greenfield.com"></div>
+    <div style="margin-top:.75rem"><label>Password</label><input id="f-pass" type="password" value="admin123"></div>
+    <button class="btn btn-hero btn-block" id="submit-btn" style="margin-top:1rem">Login as Admin</button>
+  </div>
+</main>
+<div id="footer"></div><div id="toast-root"></div>
+<script src="../js/app.js"></script><script src="../js/components.js"></script>
+<script>
+document.getElementById("submit-btn").addEventListener("click", () => {
+  const r = Store.adminLogin(document.getElementById("f-email").value.trim(), document.getElementById("f-pass").value);
+  if (!r.ok) { toast(r.error, "error"); return; }
+  toast("Welcome, admin!", "success");
+  setTimeout(() => { location.href = "/admin"; }, 500);
+});
+</script>
+</body></html>

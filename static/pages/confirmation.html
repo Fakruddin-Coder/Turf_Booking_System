@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Booking Confirmed · Greenfield Arena</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head><body>
+<div id="navbar"></div>
+<main class="container" style="padding:2rem 1.25rem">
+  <div class="card confirm-card" id="confirm-root">
+    <div class="loading"><div class="spinner"></div>Loading…</div>
+  </div>
+</main>
+<div id="footer"></div><div id="toast-root"></div>
+<script src="../js/app.js"></script><script src="../js/components.js"></script>
+<script>
+const id = qs("id");
+const b = Store.get().bookings.find(x => x.id === id);
+const root = document.getElementById("confirm-root");
+if (!b) { root.innerHTML = `<h2>Booking not found</h2><a href="book.html" class="btn btn-primary" style="margin-top:1rem">Book a slot</a>`; }
+else {
+  try {
+    root.innerHTML = `
+    <div class="check">✓</div>
+    <h2>Booking confirmed!</h2>
+    <p>Your booking ID: <strong>${b.id}</strong></p>
+    <div class="qr"><canvas id="qr"></canvas></div>
+    <div class="summary-row"><span>Name</span><span>${b.name}</span></div>
+    <div class="summary-row"><span>Date</span><span>${fmtDate(b.date)}</span></div>
+    <div class="summary-row"><span>Slots</span><span>${b.slotIds.map(s=>s.split("-")[0]).join(", ")}</span></div>
+    <div class="summary-row"><span>Duration</span><span>${b.slotIds.length} hour(s)</span></div>
+    <div class="summary-row"><span>Status</span><span class="status-pill status-${b.status}">${b.status}</span></div>
+    <div class="total"><span>Amount paid</span><strong>₹${b.amount}</strong></div>
+    <div class="confirm-actions">
+      <a class="btn btn-primary" target="_blank" href="https://wa.me/?text=${encodeURIComponent(`Booking confirmed at Greenfield Arena! ID: ${b.id} on ${fmtDate(b.date)} (${b.slotIds.map(s=>s.split('-')[0]).join(', ')})`)}">📱 WhatsApp</a>
+      <button class="btn btn-ghost" onclick="window.print()">🖨️ Print Ticket</button>
+      <a class="btn btn-ghost" href="my-bookings.html">My Bookings</a>
+    </div>`;
+    const canvas = document.getElementById("qr");
+    if (canvas && typeof QRCode !== "undefined") {
+      QRCode.toCanvas(canvas, JSON.stringify({ id: b.id, date: b.date, slots: b.slotIds }), { width: 180, margin: 1 });
+    }
+  } catch (e) {
+    console.error(e);
+    root.innerHTML = `<h2>Something went wrong</h2><p>We could not show this confirmation. Your booking may still be valid.</p><a href="my-bookings.html" class="btn btn-primary" style="margin-top:1rem">My Bookings</a>`;
+    toast("Could not load confirmation", "error");
+  }
+}
+</script>
+</body></html>

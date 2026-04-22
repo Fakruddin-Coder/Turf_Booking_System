@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Book a Slot · Greenfield Arena</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+<div id="navbar"></div>
+
+<main class="container" style="padding:2rem 1.25rem">
+  <h1 style="font-size:2rem">Book your slot</h1>
+  <p style="margin-bottom:1.5rem">Greenfield Arena · ₹800 / hour</p>
+
+  <div class="book-grid">
+    <div>
+      <div class="card">
+        <div class="form-row">
+          <div><label>Your name</label><input id="f-name" placeholder="Virat K." /></div>
+          <div><label>WhatsApp number</label><input id="f-wa" placeholder="+91 98123 45670" /></div>
+          <div><label>Date</label><input id="f-date" type="date" /></div>
+          <div><label>Duration</label><input id="f-duration" value="0 hours" disabled /></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+          <h3 style="margin:0">Available slots</h3>
+          <div style="display:flex;gap:.75rem;font-size:.8rem;color:var(--text-muted)">
+            <span>🟢 Available</span><span>🔴 Booked</span><span>⚡ Selected</span>
+          </div>
+        </div>
+        <div id="slots-container"><div class="loading"><div class="spinner"></div>Loading slots…</div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card summary">
+        <h3>Booking summary</h3>
+        <div class="summary-row"><span>Date</span><span id="s-date">—</span></div>
+        <div class="summary-row"><span>Slots</span><span id="s-slots">—</span></div>
+        <div class="summary-row"><span>Duration</span><span id="s-duration">0 hours</span></div>
+        <div class="summary-row"><span>Rate</span><span>₹800 / hour</span></div>
+        <div class="total"><span>Total</span><strong id="s-total">₹0</strong></div>
+        <button id="confirm-btn" class="btn btn-hero btn-block" style="margin-top:1rem" disabled>Confirm & Pay</button>
+        <p style="text-align:center;font-size:.75rem;color:var(--text-muted);margin-top:.5rem">Secure mock checkout · No real charges</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="footer"></div>
+<div id="toast-root"></div>
+<script src="../js/app.js"></script>
+<script src="../js/components.js"></script>
+<script>
+const periodIcons = { Morning: "🌅", Afternoon: "☀️", Evening: "🌇", Night: "🌙" };
+let selected = [];
+const dateInput = document.getElementById("f-date");
+dateInput.value = todayIso();
+dateInput.min = todayIso();
+
+const user = Store.get().user;
+if (user) {
+  document.getElementById("f-name").value = user.name || "";
+  document.getElementById("f-wa").value = user.whatsapp || "";
+}
+
+function renderSlots() {
+  const container = document.getElementById("slots-container");
+  container.innerHTML = `<div class="loading"><div class="spinner"></div>Loading slots…</div>`;
+  selected = [];
+  updateSummary();
+  setTimeout(() => {
+    try {
+      const date = dateInput.value;
+      const isToday = date === todayIso();
+      const nowHour = new Date().getHours();
+      let html = "";
+      for (const period of ["Morning","Afternoon","Evening","Night"]) {
+        html += `<div class="slot-section"><h4>${periodIcons[period]} ${period}</h4><div class="slot-grid">`;
+        for (const slot of SLOTS_BY_PERIOD[period]) {
+          const booked = Store.isSlotBooked(date, slot.id);
+          const past = isToday && parseInt(slot.id.slice(0, 2), 10) <= nowHour;
+          const cls = (booked || past) ? "booked" : "available";
+          html += `<button type="button" class="slot ${cls}" data-id="${slot.id}" ${booked || past ? "disabled" : ""}>${slot.start}</button>`;
+        }
+        html += `</div></div>`;
+      }
+      container.innerHTML = html;
+      container.querySelectorAll(".slot.available, .slot.selected").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          if (selected.includes(id)) { selected = selected.filter(s => s !== id); btn.classList.remove("selected"); btn.classList.add("available"); }
+          else { selected.push(id); btn.classList.remove("available"); btn.classList.add("selected"); }
+          updateSummary();
+        });
+      });
+    } catch (e) {
+      console.error(e);
+      container.innerHTML = `<div class="loading" style="color:var(--danger)">Could not load slots. Check that the server is running and try again.</div>`;
+      toast("Could not load slots", "error");
+    }
+  }, 350);
+}
+function updateSummary() {
+  document.getElementById("s-date").textContent = fmtDate(dateInput.value);
+  document.getElementById("s-slots").textContent = selected.length ? selected.map(s => s.split("-")[0]).join(", ") : "—";
+  const dur = `${selected.length} hour${selected.length === 1 ? "" : "s"}`;
+  document.getElementById("s-duration").textContent = dur;
+  document.getElementById("f-duration").value = dur;
+  document.getElementById("s-total").textContent = "₹" + (selected.length * PRICE_PER_HOUR);
+  document.getElementById("confirm-btn").disabled = selected.length === 0;
+}
+dateInput.addEventListener("change", renderSlots);
+renderSlots();
+
+document.getElementById("confirm-btn").addEventListener("click", () => {
+  const u = Store.get().user;
+  if (!u) { toast("Please login to book", "error"); setTimeout(() => location.href = "login.html?next=book", 600); return; }
+  const name = document.getElementById("f-name").value.trim();
+  const wa = document.getElementById("f-wa").value.trim();
+  if (!name || !/^\+?\d{10,}$/.test(wa.replace(/\s/g,""))) { toast("Enter name and valid WhatsApp", "error"); return; }
+  if (selected.length === 0) { toast("Select at least one slot", "error"); return; }
+  const btn = document.getElementById("confirm-btn");
+  btn.disabled = true; btn.textContent = "Confirming…";
+  setTimeout(() => {
+    const result = Store.createBooking({ name, whatsapp: wa, date: dateInput.value, slotIds: selected, amount: selected.length * PRICE_PER_HOUR, paymentMethod: "upi" });
+    if (result.error) { toast(result.error, "error"); btn.disabled = false; btn.textContent = "Confirm & Pay"; return; }
+    toast("Booking confirmed! 🎉", "success");
+    setTimeout(() => location.href = "confirmation.html?id=" + result.id, 500);
+  }, 800);
+});
+</script>
+</body>
+</html>
