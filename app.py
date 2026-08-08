@@ -15,7 +15,15 @@ app = Flask(__name__, static_folder="static", static_url_path="")
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-prod")
 
 # ✅ Allow only your Vercel frontend domain
-CORS(app, origins=["https://turf-booking-system-nu.vercel.app"], supports_credentials=True)
+CORS(app,
+     origins=["https://turf-booking-system-nu.vercel.app"],
+     supports_credentials=True)
+
+# ✅ Ensure cookies work cross‑origin
+app.config.update(
+    SESSION_COOKIE_SAMESITE="None",
+    SESSION_COOKIE_SECURE=True
+)
 
 DB_CONFIG = {
     "host": os.environ["DB_HOST"],
