@@ -26,17 +26,23 @@ const SLOTS_BY_PERIOD = ALL_SLOTS.reduce((acc, s) => {
 function syncGET(url) {
   const x = new XMLHttpRequest();
   x.open("GET", API_URL + url, false);
+  x.withCredentials = true; // ✅ include cookies
   try { x.send(null); } catch { return null; }
   if (x.status >= 200 && x.status < 300) { try { return JSON.parse(x.responseText); } catch { return null; } }
   return null;
 }
 async function asyncPOST(url, data) {
-  const r = await fetch(API_URL + url, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(data||{}) });
+  const r = await fetch(API_URL + url, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(data||{}),
+    credentials: "include"   // ✅ include cookies
+  });
   let body=null; try{ body = await r.json(); }catch{}
   return { ok: r.ok, status: r.status, body: body || {} };
 }
 async function asyncGET(url) {
-  const r = await fetch(API_URL + url);
+  const r = await fetch(API_URL + url, { credentials: "include" }); // ✅ include cookies
   let body=null; try{ body=await r.json(); }catch{}
   return { ok: r.ok, status: r.status, body: body || {} };
 }
@@ -95,6 +101,7 @@ const Store = {
     const x = new XMLHttpRequest();
     x.open("POST", API_URL + "/api/auth/login", false);
     x.setRequestHeader("Content-Type","application/json");
+    x.withCredentials = true; // ✅ include cookies
     try { x.send(JSON.stringify({email,password})); } catch { return {ok:false,error:"Network error"}; }
     if (x.status===200) { _bootstrap(); return { ok:true }; }
     try { return { ok:false, error: JSON.parse(x.responseText).error || "Login failed" }; }
@@ -104,6 +111,7 @@ const Store = {
     const x = new XMLHttpRequest();
     x.open("POST", API_URL + "/api/auth/signup", false);
     x.setRequestHeader("Content-Type","application/json");
+    x.withCredentials = true; // ✅ include cookies
     try { x.send(JSON.stringify({name,email,password})); } catch { return {ok:false,error:"Network error"}; }
     if (x.status===200) { _bootstrap(); return { ok:true }; }
     try { return { ok:false, error: JSON.parse(x.responseText).error || "Signup failed" }; }
@@ -113,6 +121,7 @@ const Store = {
     const x = new XMLHttpRequest();
     x.open("POST", API_URL + "/api/auth/admin-login", false);
     x.setRequestHeader("Content-Type","application/json");
+    x.withCredentials = true; // ✅ include cookies
     try { x.send(JSON.stringify({email,password})); } catch { return {ok:false,error:"Network error"}; }
     if (x.status===200) { _bootstrap(); return { ok:true }; }
     try { return { ok:false, error: JSON.parse(x.responseText).error || "Login failed" }; }
@@ -120,7 +129,9 @@ const Store = {
   },
   logout() {
     const x = new XMLHttpRequest();
-    x.open("POST", API_URL + "/api/auth/logout", false); try{x.send(null);}catch{}
+    x.open("POST", API_URL + "/api/auth/logout", false);
+    x.withCredentials = true; // ✅ include cookies
+    try{x.send(null);}catch{}
     _snapshot = { user:null, isAdmin:false, bookings:[] };
   },
 
@@ -130,6 +141,7 @@ const Store = {
     const x = new XMLHttpRequest();
     x.open("POST", API_URL + "/api/bookings", false);
     x.setRequestHeader("Content-Type","application/json");
+    x.withCredentials = true; // ✅ include cookies
     try { x.send(JSON.stringify(input)); } catch { return { error:"Network error" }; }
     if (x.status===200) {
       const b = JSON.parse(x.responseText);
@@ -142,6 +154,7 @@ const Store = {
   cancelBooking(id) {
     const x = new XMLHttpRequest();
     x.open("POST", API_URL + "/api/bookings/"+encodeURIComponent(id)+"/cancel", false);
+    x.withCredentials = true; // ✅ include cookies
     try { x.send(null); } catch { return; }
     if (x.status===200) {
       _snapshot.bookings = _snapshot.bookings.map(b => b.id===id ? {...b, status:"cancelled"} : b);
