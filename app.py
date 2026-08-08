@@ -25,12 +25,13 @@ app = Flask(__name__, static_folder="static", static_url_path="")
 app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-prod")
 
 DB_CONFIG = {
-    "host": os.environ.get("DB_HOST", "localhost"),
-    "user": os.environ.get("DB_USER", "root"),
-    "password": os.environ.get("DB_PASSWORD", "Khan@123"),
-    "database": os.environ.get("DB_NAME", "turf_booking"),
+    "host": os.environ["DB_HOST"],
+    "user": os.environ["DB_USER"],
+    "password": os.environ["DB_PASSWORD"],
+    "database": os.environ["DB_NAME"],
     "autocommit": False,
 }
+
 pool = pooling.MySQLConnectionPool(pool_name="turf_pool", pool_size=5, **DB_CONFIG)
 def db(): return pool.get_connection()
 PRICE_PER_HOUR = 800
